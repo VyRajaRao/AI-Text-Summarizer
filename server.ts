@@ -38,8 +38,13 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    // SPA catch-all: serve index.html for all non-API routes
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(distPath, 'index.html'));
+      } else {
+        res.status(404).json({ error: 'Not found' });
+      }
     });
   }
 
