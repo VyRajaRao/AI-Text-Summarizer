@@ -64,7 +64,15 @@ export default function ResultsPage() {
         }
       } catch (error: any) {
         console.error('[RESULTS] Initialization error:', error);
-        setError(error.message || 'Failed to analyze document. Check browser console for details.');
+        
+        let errorMessage = error.message || 'Failed to analyze document. Check browser console for details.';
+        
+        // Handle quota exceeded error
+        if (error.message?.includes('RESOURCE_EXHAUSTED') || error.message?.includes('quota') || error.message?.includes('429')) {
+          errorMessage = 'API Quota Exceeded. Your Gemini API has reached its free tier limit. Please upgrade your plan at https://ai.google.dev/pricing or use an API key with a higher quota.';
+        }
+        
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -86,6 +94,8 @@ export default function ResultsPage() {
   }
 
   if (error) {
+    const isQuotaError = error.includes('quota') || error.includes('RESOURCE_EXHAUSTED') || error.includes('429');
+    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark px-6">
         <div className="max-w-[600px] text-center">
@@ -98,12 +108,21 @@ export default function ResultsPage() {
             <p>
               <strong className="text-white">🔧 To Fix This:</strong>
             </p>
-            <ol className="list-decimal list-inside space-y-2 ml-4">
-              <li>Go to your Vercel project settings</li>
-              <li>Add environment variable: <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code></li>
-              <li>Set the value to your Gemini API key</li>
-              <li>Redeploy the project</li>
-            </ol>
+            {isQuotaError ? (
+              <ol className="list-decimal list-inside space-y-2 ml-4">
+                <li>You've exceeded the free tier quota (20 requests/day)</li>
+                <li>Upgrade your Gemini API plan: <a href="https://ai.google.dev/pricing" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">https://ai.google.dev/pricing</a></li>
+                <li>Or get a new API key with higher quota</li>
+                <li>Update <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code> on Vercel and redeploy</li>
+              </ol>
+            ) : (
+              <ol className="list-decimal list-inside space-y-2 ml-4">
+                <li>Go to your Vercel project settings</li>
+                <li>Add environment variable: <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code></li>
+                <li>Set the value to your Gemini API key</li>
+                <li>Redeploy the project</li>
+              </ol>
+            )}
           </div>
           <button
             onClick={() => navigate('/')}
