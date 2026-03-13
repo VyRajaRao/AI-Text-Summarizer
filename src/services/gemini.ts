@@ -1,6 +1,14 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+
+console.log('[GEMINI] Initializing with API key:', apiKey ? 'Present' : 'MISSING');
+
+if (!apiKey) {
+  console.error('[GEMINI] ERROR: No API key found! Check VITE_GEMINI_API_KEY environment variable');
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 export async function summarizeText(text: string, length: 'short' | 'medium' | 'long'): Promise<string> {
   const model = ai.models.generateContent({

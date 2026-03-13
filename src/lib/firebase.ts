@@ -3,10 +3,21 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
+console.log('[FIREBASE] Initializing with config:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  appId: firebaseConfig.appId
+});
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const googleProvider = new GoogleAuthProvider();
+
+// Enable pop-up behavior for OAuth
+googleProvider.setCustomParameters({
+  'prompt': 'select_account'
+});
 
 export enum OperationType {
   CREATE = 'create',

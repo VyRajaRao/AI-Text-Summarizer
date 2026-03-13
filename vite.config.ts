@@ -8,7 +8,7 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
     },
     esbuild: {
       target: 'esnext',
@@ -28,12 +28,9 @@ export default defineConfig(({mode}) => {
     },
     server: {
       host: '0.0.0.0',
-      port: 3000,
-      strictPort: true,
-      hmr: process.env.DISABLE_HMR === 'true' ? false : {
-        clientPort: 443,
-        path: 'hmr',
-      },
+      port: 5173,
+      strictPort: false,
+      hmr: false,
     },
   };
 });

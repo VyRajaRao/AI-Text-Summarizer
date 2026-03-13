@@ -24,6 +24,7 @@ export default function ResultsPage() {
   const [summary, setSummary] = useState<string>('');
   const [paraphrase, setParaphrase] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat' | 'comparison'>('analysis');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const temp = sessionStorage.getItem('temp_doc');
@@ -37,8 +38,18 @@ export default function ResultsPage() {
 
     const init = async () => {
       try {
+        console.log('[RESULTS] Starting analysis...');
+        
+        // Check if Gemini API key is available
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+          throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your environment variables on Vercel.');
+        }
+        
+        console.log('[RESULTS] Analyzing readability...');
         const scores = await analyzeReadability(parsed.content);
         setReadability(scores);
+        console.log('[RESULTS] Readability analysis complete:', scores);
 
         // Save document to Firestore if user is logged in
         if (user) {
@@ -51,8 +62,9 @@ export default function ResultsPage() {
           });
           setDocData(prev => prev ? { ...prev, id: docRef.id } : null);
         }
-      } catch (error) {
-        console.error('Initialization error:', error);
+      } catch (error: any) {
+        console.error('[RESULTS] Initialization error:', error);
+        setError(error.message || 'Failed to analyze document. Check browser console for details.');
       } finally {
         setIsLoading(false);
       }
@@ -68,6 +80,37 @@ export default function ResultsPage() {
         <div className="text-center">
           <p className="text-[24px] font-display font-bold text-white mb-2">Analyzing Intelligence</p>
           <p className="text-[16px] text-white/40 font-medium">Gemini 3.1 Pro is processing your document...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark px-6">
+        <div className="max-w-[600px] text-center">
+          <div className="text-[60px] mb-6">⚠️</div>
+          <h1 className="text-[32px] font-display font-bold text-white mb-4">Analysis Failed</h1>
+          <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-8 py-6 rounded-2xl mb-8 text-left">
+            <p className="font-mono text-sm whitespace-pre-wrap break-words">{error}</p>
+          </div>
+          <div className="space-y-4 text-left text-white/60 text-sm">
+            <p>
+              <strong className="text-white">🔧 To Fix This:</strong>
+            </p>
+            <ol className="list-decimal list-inside space-y-2 ml-4">
+              <li>Go to your Vercel project settings</li>
+              <li>Add environment variable: <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code></li>
+              <li>Set the value to your Gemini API key</li>
+              <li>Redeploy the project</li>
+            </ol>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-8 px-8 py-3 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
