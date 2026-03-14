@@ -73,9 +73,13 @@ export default function ChatPanel({ content }: ChatPanelProps) {
       
       const response = await chatWithContext(context, userMessage, history);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I encountered an error. Please try again." }]);
+      let errorMessage = "I'm sorry, I encountered an error. Please try again.";
+      if (error?.status === 'RESOURCE_EXHAUSTED' || error?.message?.includes('429')) {
+        errorMessage = "API Quota exceeded. Please wait a moment or try again tomorrow.";
+      }
+      setMessages(prev => [...prev, { role: 'model', text: errorMessage }]);
     } finally {
       setIsLoading(false);
     }

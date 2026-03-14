@@ -13,6 +13,7 @@ export default function SummaryPanel({ content, docId, onSummaryGenerated }: Sum
   const [length, setLength] = useState<'short' | 'medium' | 'long'>('medium');
   const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [rated, setRated] = useState<'up' | 'down' | null>(null);
 
@@ -28,6 +29,7 @@ export default function SummaryPanel({ content, docId, onSummaryGenerated }: Sum
 
   const handleGenerate = async () => {
     setIsLoading(true);
+    setError(null);
     setRated(null);
     try {
       const result = await summarizeText(content, length);
@@ -44,8 +46,13 @@ export default function SummaryPanel({ content, docId, onSummaryGenerated }: Sum
           createdAt: serverTimestamp()
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Summarization error:', error);
+      if (error?.status === 'RESOURCE_EXHAUSTED' || error?.message?.includes('429')) {
+        setError("API Quota exceeded. Please wait a moment or try again tomorrow.");
+      } else {
+        setError("Failed to generate summary. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +143,16 @@ export default function SummaryPanel({ content, docId, onSummaryGenerated }: Sum
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+              </div>
+            ) : error ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                <p className="text-red-400 font-medium mb-4">{error}</p>
+                <button
+                  onClick={handleGenerate}
+                  className="text-[13px] font-bold uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                >
+                  Try Again
+                </button>
               </div>
             ) : (
               <p className="text-[18px] leading-relaxed text-white/80 whitespace-pre-wrap">{summary}</p>
