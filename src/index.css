@@ -10,76 +10,13 @@
 }
 
 @layer base {
-  * {
-    @apply transition-colors duration-300;
-  }
-
-  html {
-    @apply scroll-smooth;
-  }
-
   body {
     @apply font-sans bg-bg-dark text-white antialiased;
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-}
-
-/* Mobile Portrait & Landscape */
-@media (max-width: 640px) {
-  body {
-    font-size: 14px;
-  }
-
-  h1 {
-    @apply text-3xl sm:text-4xl;
-  }
-
-  h2 {
-    @apply text-2xl sm:text-3xl;
-  }
-
-  h3 {
-    @apply text-xl sm:text-2xl;
-  }
-}
-
-/* Landscape Orientation */
-@media (max-height: 500px) {
-  main {
-    @apply py-4;
-  }
-
-  .pt-40 {
-    @apply pt-20 md:pt-40;
-  }
-
-  .pb-20 {
-    @apply pb-10 md:pb-20;
-  }
-}
-
-/* Tablet Portrait */
-@media (min-width: 768px) and (max-width: 1024px) {
-  body {
-    font-size: 15px;
-  }
-}
-
-/* Desktop & Large Screens */
-@media (min-width: 1025px) {
-  body {
-    font-size: 16px;
   }
 }
 
 .glass-morphism {
   @apply bg-white/[0.03] backdrop-blur-2xl border border-white/10;
-  @apply transition-all duration-300;
-}
-
-.glass-morphism:hover {
-  @apply bg-white/[0.05] border-white/20;
 }
 
 .glass-morphism-heavy {
@@ -96,21 +33,4 @@
 
 .glow-emerald {
   @apply shadow-[0_0_40px_-10px_rgba(16,185,129,0.3)];
-}
-
-/* Responsive Grid */
-@media (max-width: 640px) {
-  .grid-cols-3 {
-    @apply grid-cols-1;
-  }
-
-  .gap-16 {
-    @apply gap-8;
-  }
-}
-
-@media (min-width: 641px) and (max-width: 1024px) {
-  .grid-cols-3 {
-    @apply grid-cols-2;
-  }
 }

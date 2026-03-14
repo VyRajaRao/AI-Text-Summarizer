@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { chatWithDocument } from '../services/gemini';
-import { MessageSquare, Send, Loader2, User, Bot } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { chatWithContext } from '../services/gemini';
+import { EmbeddingService } from '../services/embeddingService';
+import { MessageSquare, Send, Loader2, User, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ChatPanelProps {
@@ -16,7 +17,34 @@ export default function ChatPanel({ content }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isEmbedding, setIsEmbedding] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Split content into chunks for semantic search
+  const chunks = useMemo(() => {
+    return content
+      .split(/\n\n+/)
+      .map(p => p.trim())
+      .filter(p => p.length > 20);
+  }, [content]);
+
+  // Pre-cache embeddings for chunks
+  useEffect(() => {
+    const prepareEmbeddings = async () => {
+      if (chunks.length === 0) {
+        setIsEmbedding(false);
+        return;
+      }
+      try {
+        await EmbeddingService.getBatchEmbeddings(chunks);
+      } catch (error) {
+        console.error('Embedding preparation error:', error);
+      } finally {
+        setIsEmbedding(false);
+      }
+    };
+    prepareEmbeddings();
+  }, [chunks]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -26,7 +54,7 @@ export default function ChatPanel({ content }: ChatPanelProps) {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isEmbedding) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -34,11 +62,16 @@ export default function ChatPanel({ content }: ChatPanelProps) {
     setIsLoading(true);
 
     try {
+      // Semantic Search: Find most relevant chunks
+      const relevantResults = await EmbeddingService.findMostSimilar(userMessage, chunks, 3);
+      const context = relevantResults.map(r => r.text).join('\n\n---\n\n');
+
       const history = messages.map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
       }));
-      const response = await chatWithDocument(content, userMessage, history);
+      
+      const response = await chatWithContext(context, userMessage, history);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -105,15 +138,16 @@ export default function ChatPanel({ content }: ChatPanelProps) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a question..."
-          className="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+          placeholder={isEmbedding ? "Preparing document intelligence..." : "Ask a question..."}
+          disabled={isEmbedding}
+          className="w-full bg-white/5 border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-emerald-500/50 transition-all disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={!input.trim() || isLoading}
+          disabled={!input.trim() || isLoading || isEmbedding}
           className="absolute right-2 top-2 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center disabled:opacity-50 hover:scale-105 transition-all"
         >
-          <Send className="w-4 h-4" />
+          {isEmbedding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
       </form>
     </div>

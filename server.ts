@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 5173;
+  const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -26,7 +26,7 @@ async function startServer() {
         server: { 
           middlewareMode: true,
           host: '0.0.0.0',
-          port: 5173
+          port: 3000
         },
         appType: "spa",
       });
@@ -38,13 +38,8 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    // SPA catch-all: serve index.html for all non-API routes
     app.get('*', (req, res) => {
-      if (!req.path.startsWith('/api/')) {
-        res.sendFile(path.join(distPath, 'index.html'));
-      } else {
-        res.status(404).json({ error: 'Not found' });
-      }
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 

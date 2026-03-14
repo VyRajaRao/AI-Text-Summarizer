@@ -27,8 +27,8 @@ export default function KeyPointsPanel({ content }: KeyPointsPanelProps) {
   }, [content]);
 
   return (
-    <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
-      <div className="flex items-center justify-between mb-8">
+    <div className="glass-morphism rounded-[32px] p-10 shadow-sm">
+      <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
             <ListChecks className="w-5 h-5 text-emerald-400" />

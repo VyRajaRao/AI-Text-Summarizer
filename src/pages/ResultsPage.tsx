@@ -24,7 +24,6 @@ export default function ResultsPage() {
   const [summary, setSummary] = useState<string>('');
   const [paraphrase, setParaphrase] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat' | 'comparison'>('analysis');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const temp = sessionStorage.getItem('temp_doc');
@@ -38,18 +37,8 @@ export default function ResultsPage() {
 
     const init = async () => {
       try {
-        console.log('[RESULTS] Starting analysis...');
-        
-        // Check if Gemini API key is available
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your environment variables on Vercel.');
-        }
-        
-        console.log('[RESULTS] Analyzing readability...');
         const scores = await analyzeReadability(parsed.content);
         setReadability(scores);
-        console.log('[RESULTS] Readability analysis complete:', scores);
 
         // Save document to Firestore if user is logged in
         if (user) {
@@ -62,17 +51,8 @@ export default function ResultsPage() {
           });
           setDocData(prev => prev ? { ...prev, id: docRef.id } : null);
         }
-      } catch (error: any) {
-        console.error('[RESULTS] Initialization error:', error);
-        
-        let errorMessage = error.message || 'Failed to analyze document. Check browser console for details.';
-        
-        // Handle quota exceeded error
-        if (error.message?.includes('RESOURCE_EXHAUSTED') || error.message?.includes('quota') || error.message?.includes('429')) {
-          errorMessage = 'API Quota Exceeded. Your Gemini API has reached its free tier limit. Please upgrade your plan at https://ai.google.dev/pricing or use an API key with a higher quota.';
-        }
-        
-        setError(errorMessage);
+      } catch (error) {
+        console.error('Initialization error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -88,48 +68,6 @@ export default function ResultsPage() {
         <div className="text-center">
           <p className="text-[24px] font-display font-bold text-white mb-2">Analyzing Intelligence</p>
           <p className="text-[16px] text-white/40 font-medium">Gemini 3.1 Pro is processing your document...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    const isQuotaError = error.includes('quota') || error.includes('RESOURCE_EXHAUSTED') || error.includes('429');
-    
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark px-6">
-        <div className="max-w-[600px] text-center">
-          <div className="text-[60px] mb-6">⚠️</div>
-          <h1 className="text-[32px] font-display font-bold text-white mb-4">Analysis Failed</h1>
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-8 py-6 rounded-2xl mb-8 text-left">
-            <p className="font-mono text-sm whitespace-pre-wrap break-words">{error}</p>
-          </div>
-          <div className="space-y-4 text-left text-white/60 text-sm">
-            <p>
-              <strong className="text-white">🔧 To Fix This:</strong>
-            </p>
-            {isQuotaError ? (
-              <ol className="list-decimal list-inside space-y-2 ml-4">
-                <li>You've exceeded the free tier quota (20 requests/day)</li>
-                <li>Upgrade your Gemini API plan: <a href="https://ai.google.dev/pricing" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">https://ai.google.dev/pricing</a></li>
-                <li>Or get a new API key with higher quota</li>
-                <li>Update <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code> on Vercel and redeploy</li>
-              </ol>
-            ) : (
-              <ol className="list-decimal list-inside space-y-2 ml-4">
-                <li>Go to your Vercel project settings</li>
-                <li>Add environment variable: <code className="bg-white/10 px-2 py-1 rounded">VITE_GEMINI_API_KEY</code></li>
-                <li>Set the value to your Gemini API key</li>
-                <li>Redeploy the project</li>
-              </ol>
-            )}
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="mt-8 px-8 py-3 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform"
-          >
-            Go Back
-          </button>
         </div>
       </div>
     );
@@ -242,34 +180,43 @@ export default function ResultsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-10">
             {activeTab === 'analysis' && (
-              <>
+              <div className="space-y-10">
                 <SummaryPanel 
                   content={docData.content} 
                   docId={docData.id || 'temp'} 
                   onSummaryGenerated={setSummary}
                 />
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <KeyPointsPanel content={docData.content} />
                   <TopicsPanel content={docData.content} />
                 </div>
+
                 <ParaphrasePanel 
                   content={docData.content} 
                   docId={docData.id || 'temp'} 
                   onParaphraseGenerated={setParaphrase}
                 />
-                <GlossaryPanel content={docData.content} />
-                <QuestionsPanel content={docData.content} />
-              </>
+
+                <div className="grid grid-cols-1 gap-8">
+                  <GlossaryPanel content={docData.content} />
+                  <QuestionsPanel content={docData.content} />
+                </div>
+              </div>
             )}
 
             {activeTab === 'chat' && (
-              <ChatPanel content={docData.content} />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ChatPanel content={docData.content} />
+              </div>
             )}
 
             {activeTab === 'comparison' && (
-              <ComparisonPanel content={docData.content} />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ComparisonPanel content={docData.content} />
+              </div>
             )}
           </div>
         </div>

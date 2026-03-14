@@ -54,6 +54,14 @@ service cloud.firestore {
              data.content is string && data.content.size() < 1000000;
     }
 
+    function isValidEmbedding(data) {
+      return data.keys().hasAll(['textHash', 'text', 'vector', 'createdAt']) &&
+             data.textHash is string &&
+             data.text is string &&
+             data.vector is list &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -89,6 +97,11 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow list: if isAdmin();
+    }
+
+    match /embeddings/{embeddingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidEmbedding(request.resource.data);
     }
   }
 }

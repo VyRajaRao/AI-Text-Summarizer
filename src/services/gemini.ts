@@ -1,14 +1,17 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-console.log('[GEMINI] Initializing with API key:', apiKey ? 'Present' : 'MISSING');
-
-if (!apiKey) {
-  console.error('[GEMINI] ERROR: No API key found! Check VITE_GEMINI_API_KEY environment variable');
-}
-
-const ai = new GoogleGenAI({ apiKey });
+const PLAIN_TEXT_FORMATTING_INSTRUCTIONS = `
+FORMATTING RULES:
+1. Return response in clean, structured plain text ONLY.
+2. DO NOT use markdown syntax (no bold, italics, bullet points, backticks, or hashtags).
+3. DO NOT include markdown list symbols like -, *, or numbered markdown lists.
+4. Use simple structured headings followed by a colon (e.g., "Summary:", "Key Point:").
+5. Use only normal characters and plain text. No decorative symbols.
+6. Ensure proper spacing between sections for readability.
+7. DO NOT wrap text in code blocks.
+`;
 
 export async function summarizeText(text: string, length: 'short' | 'medium' | 'long'): Promise<string> {
   const model = ai.models.generateContent({
@@ -17,6 +20,8 @@ export async function summarizeText(text: string, length: 'short' | 'medium' | '
     Short: 1-2 sentences.
     Medium: 1 paragraph.
     Long: Multiple paragraphs with key points.
+    
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
     
     Text: ${text}`,
   });
@@ -32,6 +37,8 @@ export async function paraphraseText(text: string, level: 'beginner' | 'intermed
     Beginner: Simple vocabulary, short sentences, easy to understand for children or non-native speakers.
     Intermediate: Standard vocabulary, clear structure, suitable for general audience.
     Advanced: Academic/Technical vocabulary, complex sentence structures, suitable for researchers or experts.
+    
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
     
     Text: ${text}`,
   });
@@ -82,6 +89,8 @@ export async function extractKeyPoints(text: string): Promise<string[]> {
     contents: `Extract the most important bullet points from the following text. 
     Rank them by importance. Return as a JSON array of strings.
     
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
+    
     Text: ${text}`,
     config: {
       responseMimeType: "application/json",
@@ -101,6 +110,8 @@ export async function detectTopics(text: string): Promise<string[]> {
     model: "gemini-3-flash-preview",
     contents: `Detect the main topics or themes of the following text. 
     Return as a JSON array of strings.
+    
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
     
     Text: ${text}`,
     config: {
@@ -122,6 +133,8 @@ export async function generateQuestions(text: string): Promise<{ question: strin
     contents: `Generate study questions from the following text. 
     Include both comprehension and conceptual questions.
     Return as a JSON array of objects with 'question' and 'type' fields.
+    
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
     
     Text: ${text}`,
     config: {
@@ -149,6 +162,8 @@ export async function generateGlossary(text: string): Promise<{ term: string; de
     model: "gemini-3-flash-preview",
     contents: `Detect important technical terms in the following text and generate definitions for them.
     Return as a JSON array of objects with 'term' and 'definition' fields.
+    
+    ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
     
     Text: ${text}`,
     config: {
@@ -180,10 +195,49 @@ export async function chatWithDocument(text: string, query: string, history: { r
       { role: 'user', parts: [{ text: query }] }
     ],
     config: {
-      systemInstruction: "You are a helpful assistant that answers questions based on the provided document. If the answer is not in the document, say you don't know based on the context provided."
+      systemInstruction: `You are a helpful assistant that answers questions based on the provided document. If the answer is not in the document, say you don't know based on the context provided.
+      
+      ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}`
     }
   });
 
   const response = await model;
   return response.text || "I'm sorry, I couldn't process that request.";
+}
+
+export async function chatWithContext(context: string, query: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]): Promise<string> {
+  const model = ai.models.generateContent({
+    model: "gemini-3.1-pro-preview",
+    contents: [
+      { role: 'user', parts: [{ text: `Relevant Context:\n${context}` }] },
+      ...history,
+      { role: 'user', parts: [{ text: query }] }
+    ],
+    config: {
+      systemInstruction: `You are a helpful assistant that answers questions based on the provided context. Use the provided context to answer the user's question accurately. If the answer is not in the context, inform the user but try to be helpful if possible using general knowledge, while clearly stating it's not in the document.
+      
+      ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}`
+    }
+  });
+
+  const response = await model;
+  return response.text || "I'm sorry, I couldn't process that request.";
+}
+
+export async function generateEmbedding(text: string): Promise<number[]> {
+  const result = await ai.models.embedContent({
+    model: "gemini-embedding-001",
+    contents: [text],
+  });
+
+  return result.embeddings[0].values;
+}
+
+export async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
+  const result = await ai.models.embedContent({
+    model: "gemini-embedding-001",
+    contents: texts,
+  });
+
+  return result.embeddings.map(e => e.values);
 }

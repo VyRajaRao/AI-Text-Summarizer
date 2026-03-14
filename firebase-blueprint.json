@@ -75,6 +75,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "targetId", "targetType", "rating"]
+    },
+    "Embedding": {
+      "title": "Embedding",
+      "description": "Cached text embeddings",
+      "type": "object",
+      "properties": {
+        "textHash": { "type": "string" },
+        "text": { "type": "string" },
+        "vector": { "type": "array", "items": { "type": "number" } },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["textHash", "text", "vector", "createdAt"]
     }
   },
   "firestore": {
@@ -97,6 +110,10 @@
     "/feedback/{feedbackId}": {
       "schema": "Feedback",
       "description": "User feedback"
+    },
+    "/embeddings/{embeddingId}": {
+      "schema": "Embedding",
+      "description": "Cached embeddings"
     }
   }
 }

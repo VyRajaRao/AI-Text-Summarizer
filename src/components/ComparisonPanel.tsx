@@ -1,25 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { summarizeText } from '../services/gemini';
-import { Columns, Loader2, Clock } from 'lucide-react';
+import { EmbeddingService } from '../services/embeddingService';
+import { Columns, Loader2, Clock, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
+
+interface SummaryData {
+  text: string;
+  similarity: number;
+}
 
 interface ComparisonPanelProps {
   content: string;
 }
 
 export default function ComparisonPanel({ content }: ComparisonPanelProps) {
-  const [summaries, setSummaries] = useState<{ short: string; medium: string; long: string } | null>(null);
+  const [summaries, setSummaries] = useState<{ short: SummaryData; medium: SummaryData; long: SummaryData } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSummaries = async () => {
+    const fetchSummariesAndSimilarity = async () => {
       try {
-        const [short, medium, long] = await Promise.all([
+        // 1. Generate summaries
+        const [shortText, mediumText, longText] = await Promise.all([
           summarizeText(content, 'short'),
           summarizeText(content, 'medium'),
           summarizeText(content, 'long')
         ]);
-        setSummaries({ short, medium, long });
+
+        // 2. Generate embeddings for original and summaries
+        const [originalVec, ...summaryVecs] = await EmbeddingService.getBatchEmbeddings([
+          content,
+          shortText,
+          mediumText,
+          longText
+        ]);
+
+        // 3. Calculate similarities
+        setSummaries({
+          short: { text: shortText, similarity: EmbeddingService.cosineSimilarity(originalVec, summaryVecs[0]) },
+          medium: { text: mediumText, similarity: EmbeddingService.cosineSimilarity(originalVec, summaryVecs[1]) },
+          long: { text: longText, similarity: EmbeddingService.cosineSimilarity(originalVec, summaryVecs[2]) }
+        });
       } catch (error) {
         console.error('Error fetching summaries:', error);
       } finally {
@@ -27,7 +48,7 @@ export default function ComparisonPanel({ content }: ComparisonPanelProps) {
       }
     };
 
-    fetchSummaries();
+    fetchSummariesAndSimilarity();
   }, [content]);
 
   const calculateReadingTime = (text: string) => {
@@ -54,9 +75,9 @@ export default function ComparisonPanel({ content }: ComparisonPanelProps) {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {[
-            { title: 'Short', content: summaries?.short, color: 'emerald' },
-            { title: 'Medium', content: summaries?.medium, color: 'blue' },
-            { title: 'Long', content: summaries?.long, color: 'purple' }
+            { title: 'Short', data: summaries?.short, color: 'emerald' },
+            { title: 'Medium', data: summaries?.medium, color: 'blue' },
+            { title: 'Long', data: summaries?.long, color: 'purple' }
           ].map((s, i) => (
             <motion.div
               key={s.title}
@@ -67,14 +88,20 @@ export default function ComparisonPanel({ content }: ComparisonPanelProps) {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[18px] font-bold text-white">{s.title}</h3>
-                <div className="flex items-center gap-2 text-[11px] font-bold text-white/30 uppercase tracking-widest">
-                  <Clock className="w-3 h-3" />
-                  {calculateReadingTime(s.content || '')} min read
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-white/30 uppercase tracking-widest">
+                    <Clock className="w-3 h-3" />
+                    {calculateReadingTime(s.data?.text || '')} min read
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
+                    <Zap className="w-3 h-3" />
+                    {Math.round((s.data?.similarity || 0) * 100)}% Match
+                  </div>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 <p className="text-[15px] leading-relaxed text-white/60 whitespace-pre-wrap">
-                  {s.content}
+                  {s.data?.text}
                 </p>
               </div>
             </motion.div>

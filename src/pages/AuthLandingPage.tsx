@@ -1,25 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { auth, googleProvider, signInWithPopup } from '../lib/firebase';
 import { Sparkles, ArrowRight, Shield, Zap, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function AuthLandingPage() {
-  const [signingIn, setSigningIn] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const handleSignIn = async () => {
-    setSigningIn(true);
-    setError(null);
     try {
-      console.log('[AUTH] Starting Google sign-in...');
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log('[AUTH] Sign-in successful:', result.user.email);
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('[AUTH] Sign-in error:', errorMessage);
-      setError(errorMessage);
-    } finally {
-      setSigningIn(false);
+      console.error('Error signing in:', error);
     }
   };
 
@@ -55,20 +44,11 @@ export default function AuthLandingPage() {
         <div className="flex flex-col items-center gap-8">
           <button
             onClick={handleSignIn}
-            disabled={signingIn}
-            className="group relative flex items-center gap-4 bg-white text-black px-10 py-5 rounded-full font-bold text-[18px] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative flex items-center gap-4 bg-white text-black px-10 py-5 rounded-full font-bold text-[18px] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-white/10"
           >
-            <span>{signingIn ? 'Signing in...' : 'Enter the Platform'}</span>
+            <span>Enter the Platform</span>
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </button>
-          
-          {error && (
-            <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-6 py-3 rounded-lg max-w-[500px] text-center text-sm">
-              <p className="font-semibold mb-1">Sign-in Error</p>
-              <p className="text-xs">{error}</p>
-              <p className="text-xs mt-2 text-red-300">Make sure localhost:5173 is added to Firebase's authorized redirect URIs</p>
-            </div>
-          )}
           
           <div className="flex items-center gap-3 text-white/20">
             <Shield className="w-4 h-4" />
