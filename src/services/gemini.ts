@@ -268,7 +268,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     contents: [text],
   });
 
-  return result.embeddings?.[0]?.values ?? [];
+  return result.embeddings[0].values;
 }
 
 export async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
@@ -277,5 +277,5 @@ export async function generateBatchEmbeddings(texts: string[]): Promise<number[]
     contents: texts,
   });
 
-  return (result.embeddings ?? []).map(e => e.values ?? []);
+  return result.embeddings.map(e => e.values);
 }

@@ -15,19 +15,11 @@ import ComparisonPanel from '../components/ComparisonPanel';
 import ExportButton from '../components/ExportButton';
 import { Loader2, ArrowLeft, FileText, BarChart3, Cpu, LayoutGrid, MessageSquare, BookOpen, HelpCircle } from 'lucide-react';
 
-type ReadabilityData = {
-  fleschKincaid: number;
-  gunningFog: number;
-  smog: number;
-  gradeLevel: string;
-};
-
 export default function ResultsPage() {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [docData, setDocData] = useState<{ content: string; title: string; id?: string } | null>(null);
-  const [readability, setReadability] = useState<ReadabilityData | null>(null);
-  const [readabilityError, setReadabilityError] = useState(false);
+  const [readability, setReadability] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [summary, setSummary] = useState<string>('');
   const [paraphrase, setParaphrase] = useState<string>('');
@@ -61,7 +53,6 @@ export default function ResultsPage() {
         }
       } catch (error) {
         console.error('Initialization error:', error);
-        setReadabilityError(true);
       } finally {
         setIsLoading(false);
       }
@@ -137,33 +128,25 @@ export default function ResultsPage() {
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Core Metrics</span>
               </div>
               
-              {readabilityError || !readability ? (
-                <div className="py-8 text-center">
-                  <p className="text-white/40 text-[14px]">
-                    {readabilityError ? 'Failed to load readability metrics.' : 'Metrics unavailable.'}
-                  </p>
+              <div className="space-y-8">
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-wider text-white/30 mb-2">Grade Level</p>
+                  <p className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
                 </div>
-              ) : (
-                <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
                   <div>
-                    <p className="text-[12px] font-bold uppercase tracking-wider text-white/30 mb-2">Grade Level</p>
-                    <p className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Flesch-Kincaid</p>
+                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Flesch-Kincaid</p>
-                      <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Gunning Fog</p>
-                      <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
-                    </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Gunning Fog</p>
+                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {readability && <ReadabilityChart data={readability} />}
+            <ReadabilityChart data={readability} />
 
             {/* Model Information */}
             <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
