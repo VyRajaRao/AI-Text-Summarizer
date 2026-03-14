@@ -62,28 +62,36 @@ export default function AuthLandingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 1 }}
-        className="grid grid-cols-3 md:grid-cols-1 gap-16 mt-32 z-10 max-w-[1100px] w-full border-t border-white/5 pt-16"
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-32 z-10 max-w-[1200px] w-full border-t border-white/5 pt-16"
       >
-        <div className="flex flex-col gap-5 group">
-          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-emerald-500/50 transition-colors">
-            <Zap className="w-6 h-6 text-emerald-400" />
+        <div className="glass-morphism p-8 rounded-[32px] border border-white/5 hover:bg-white/[0.02] transition-all flex flex-col gap-6 group">
+          <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-black transition-all">
+            <Zap className="w-6 h-6 text-emerald-400 group-hover:text-inherit" />
           </div>
-          <h3 className="text-[20px] font-display font-bold">Neural Summarization</h3>
-          <p className="text-white/30 text-[15px] leading-relaxed">Distill massive documents into surgical insights with zero loss in context or nuance.</p>
+          <div>
+            <h3 className="text-[22px] font-display font-bold mb-3">Neural Summarization</h3>
+            <p className="text-white/40 text-[15px] leading-relaxed">Distill massive documents into surgical insights with zero loss in context or nuance.</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-5 group">
-          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-emerald-500/50 transition-colors">
-            <Globe className="w-6 h-6 text-emerald-400" />
+        
+        <div className="glass-morphism p-8 rounded-[32px] border border-white/5 hover:bg-white/[0.02] transition-all flex flex-col gap-6 group">
+          <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-black transition-all">
+            <Globe className="w-6 h-6 text-emerald-400 group-hover:text-inherit" />
           </div>
-          <h3 className="text-[20px] font-display font-bold">Adaptive Paraphrasing</h3>
-          <p className="text-white/30 text-[15px] leading-relaxed">Instantly pivot your content's tone and complexity for any audience, from beginner to expert.</p>
+          <div>
+            <h3 className="text-[22px] font-display font-bold mb-3">Adaptive Paraphrasing</h3>
+            <p className="text-white/40 text-[15px] leading-relaxed">Instantly pivot your content's tone and complexity for any audience, from beginner to expert.</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-5 group">
-          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-emerald-500/50 transition-colors">
-            <Shield className="w-6 h-6 text-emerald-400" />
+
+        <div className="glass-morphism p-8 rounded-[32px] border border-white/5 hover:bg-white/[0.02] transition-all flex flex-col gap-6 group">
+          <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-black transition-all">
+            <Shield className="w-6 h-6 text-emerald-400 group-hover:text-inherit" />
           </div>
-          <h3 className="text-[20px] font-display font-bold">Privacy First</h3>
-          <p className="text-white/30 text-[15px] leading-relaxed">Your data is yours. We use enterprise-grade encryption and never train on your private content.</p>
+          <div>
+            <h3 className="text-[22px] font-display font-bold mb-3">Privacy First</h3>
+            <p className="text-white/40 text-[15px] leading-relaxed">Your data is yours. We use enterprise-grade encryption and never train on your private content.</p>
+          </div>
         </div>
       </motion.div>
     </div>

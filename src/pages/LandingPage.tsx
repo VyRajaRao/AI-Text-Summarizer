@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { Sparkles, Cpu, Cloud, Layers, Shield, Zap, Globe } from 'lucide-react';
 import UploadBox from '../components/UploadBox';
+import ManualTextInput from '../components/ManualTextInput';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -44,7 +45,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-bg-dark pt-40 pb-20 overflow-hidden">
+    <div ref={containerRef} className="relative min-h-screen bg-bg-dark pt-24 md:pt-40 pb-20 overflow-hidden">
       {/* Background Atmosphere */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full" />
@@ -85,7 +86,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-[90px] md:text-[72px] sm:text-[56px] font-display font-bold text-white leading-[0.85] tracking-[-0.04em] mb-8"
+          className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[90px] font-display font-bold text-white leading-[0.9] tracking-[-0.04em] mb-8"
         >
           Transform your<br />
           <span className="text-gradient">reading experience.</span>
@@ -95,7 +96,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-[22px] md:text-[18px] text-white/40 max-w-[600px] mx-auto mb-16 leading-relaxed"
+          className="text-[18px] md:text-[22px] text-white/40 max-w-[600px] mx-auto mb-16 leading-relaxed"
         >
           Upload any document and let our advanced AI models distill complex information into clear, actionable insights.
         </motion.p>
@@ -107,6 +108,7 @@ export default function LandingPage() {
           className="max-w-[800px] mx-auto"
         >
           <UploadBox onUpload={handleUpload} />
+          <ManualTextInput onAnalyze={handleUpload} />
         </motion.div>
 
         {/* Stats Section */}
@@ -114,18 +116,18 @@ export default function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.6 }}
-          className="grid grid-cols-3 gap-12 mt-32 pt-12 border-t border-white/5"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-32 pt-12 border-t border-white/5"
         >
-          <div>
-            <p className="text-[48px] font-display font-bold text-white">99.8%</p>
+          <div className="glass-morphism p-8 rounded-[24px] border border-white/5 hover:bg-white/[0.02] transition-all">
+            <h3 className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none mb-2">99.8%</h3>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/30">Accuracy Rate</p>
           </div>
-          <div>
-            <p className="text-[48px] font-display font-bold text-white">2.4s</p>
+          <div className="glass-morphism p-8 rounded-[24px] border border-white/5 hover:bg-white/[0.02] transition-all">
+            <h3 className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none mb-2">2.4s</h3>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/30">Avg. Processing</p>
           </div>
-          <div>
-            <p className="text-[48px] font-display font-bold text-white">142</p>
+          <div className="glass-morphism p-8 rounded-[24px] border border-white/5 hover:bg-white/[0.02] transition-all">
+            <h3 className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none mb-2">142</h3>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/30">Languages Supported</p>
           </div>
         </motion.div>

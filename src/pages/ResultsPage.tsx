@@ -76,14 +76,14 @@ export default function ResultsPage() {
   if (!docData) return null;
 
   return (
-    <div className="min-h-screen bg-bg-dark pt-32 pb-20">
+    <div className="min-h-screen bg-bg-dark pt-24 md:pt-32 pb-20">
       <div className="max-w-[1200px] mx-auto px-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => navigate('/')}
-              className="w-12 h-12 glass-morphism rounded-full flex items-center justify-center shadow-lg hover:bg-white/10 transition-all"
+              className="w-12 h-12 glass-morphism rounded-full flex-shrink-0 flex items-center justify-center shadow-lg hover:bg-white/10 transition-all"
             >
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
@@ -92,17 +92,17 @@ export default function ResultsPage() {
                 <FileText className="w-4 h-4" />
                 <span className="text-[12px] font-bold uppercase tracking-[0.2em]">Analysis Engine</span>
               </div>
-              <h1 className="text-[40px] font-display font-bold text-white tracking-tight leading-tight">{docData.title}</h1>
+              <h1 className="text-[28px] md:text-[40px] font-display font-bold text-white tracking-tight leading-tight">{docData.title}</h1>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex bg-white/5 border border-white/10 rounded-full p-1 mr-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex bg-white/5 border border-white/10 rounded-full p-1">
               {(['analysis', 'chat', 'comparison'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-2 rounded-full text-[13px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-4 md:px-6 py-2 rounded-full text-[11px] md:text-[13px] font-bold uppercase tracking-wider transition-all ${
                     activeTab === tab ? 'bg-white text-black' : 'text-white/40 hover:text-white/60'
                   }`}
                 >
@@ -131,16 +131,16 @@ export default function ResultsPage() {
               <div className="space-y-8">
                 <div>
                   <p className="text-[12px] font-bold uppercase tracking-wider text-white/30 mb-2">Grade Level</p>
-                  <p className="text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
+                  <p className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Flesch-Kincaid</p>
-                    <p className="text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
+                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Gunning Fog</p>
-                    <p className="text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
+                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
                   </div>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function ResultsPage() {
                   onParaphraseGenerated={setParaphrase}
                 />
 
-                <div className="grid grid-cols-1 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <GlossaryPanel content={docData.content} />
                   <QuestionsPanel content={docData.content} />
                 </div>
