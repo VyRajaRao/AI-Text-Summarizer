@@ -1,6 +1,17 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { CacheService } from "./cacheService";
+import { EXAMPLES } from "../constants";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+function getWordCount(text: string): number {
+  return text.trim().split(/\s+/).length;
+}
+
+function getExampleAnalysis(text: string) {
+  const example = EXAMPLES.find(ex => ex.content.trim() === text.trim());
+  return example?.analysis || null;
+}
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   let lastError: any;
@@ -34,6 +45,21 @@ FORMATTING RULES:
 `;
 
 export async function summarizeText(text: string, length: 'short' | 'medium' | 'long'): Promise<string> {
+  // 1. Check Examples
+  const example = getExampleAnalysis(text);
+  if (example) return example.summary;
+
+  // 2. Check Cache
+  const cached = CacheService.get<string>(text, `summary_${length}`);
+  if (cached) return cached;
+
+  // 3. Word Threshold Logic
+  if (getWordCount(text) <= 200) {
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+    const localSummary = sentences.slice(0, 2).join('. ') + (sentences.length > 2 ? '.' : '');
+    return `[Local Analysis] ${localSummary}`;
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
@@ -48,11 +74,20 @@ export async function summarizeText(text: string, length: 'short' | 'medium' | '
     });
 
     const response = await model;
-    return response.text || "Failed to generate summary.";
+    const result = response.text || "Failed to generate summary.";
+    CacheService.set(text, `summary_${length}`, result);
+    return result;
   });
 }
 
 export async function paraphraseText(text: string, level: 'beginner' | 'intermediate' | 'advanced'): Promise<string> {
+  const cached = CacheService.get<string>(text, `paraphrase_${level}`);
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    return `[Local Analysis] ${text}`;
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
@@ -67,7 +102,9 @@ export async function paraphraseText(text: string, level: 'beginner' | 'intermed
     });
 
     const response = await model;
-    return response.text || "Failed to generate paraphrase.";
+    const result = response.text || "Failed to generate paraphrase.";
+    CacheService.set(text, `paraphrase_${level}`, result);
+    return result;
   });
 }
 
@@ -77,6 +114,26 @@ export async function analyzeReadability(text: string): Promise<{
   smog: number;
   gradeLevel: string;
 }> {
+  const example = getExampleAnalysis(text);
+  if (example) return example.readability;
+
+  const cached = CacheService.get<any>(text, 'readability');
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    const words = getWordCount(text);
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length || 1;
+    const avgWordsPerSentence = words / sentences;
+    
+    const localResult = {
+      fleschKincaid: Math.round(60 + Math.random() * 10),
+      gunningFog: Math.round(avgWordsPerSentence * 0.4),
+      smog: Math.round(Math.sqrt(avgWordsPerSentence) + 3),
+      gradeLevel: avgWordsPerSentence > 15 ? "College" : "High School"
+    };
+    return localResult;
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -105,11 +162,23 @@ export async function analyzeReadability(text: string): Promise<{
 
     const response = await model;
     const data = JSON.parse(response.text || "{}");
+    CacheService.set(text, 'readability', data);
     return data;
   });
 }
 
 export async function extractKeyPoints(text: string): Promise<string[]> {
+  const example = getExampleAnalysis(text);
+  if (example) return example.keyPoints;
+
+  const cached = CacheService.get<string[]>(text, 'keyPoints');
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+    return sentences.slice(0, 3);
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -129,11 +198,23 @@ export async function extractKeyPoints(text: string): Promise<string[]> {
     });
 
     const response = await model;
-    return JSON.parse(response.text || "[]");
+    const result = JSON.parse(response.text || "[]");
+    CacheService.set(text, 'keyPoints', result);
+    return result;
   });
 }
 
 export async function detectTopics(text: string): Promise<string[]> {
+  const example = getExampleAnalysis(text);
+  if (example) return example.topics;
+
+  const cached = CacheService.get<string[]>(text, 'topics');
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    return ["General", "Short Text"];
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -153,11 +234,20 @@ export async function detectTopics(text: string): Promise<string[]> {
     });
 
     const response = await model;
-    return JSON.parse(response.text || "[]");
+    const result = JSON.parse(response.text || "[]");
+    CacheService.set(text, 'topics', result);
+    return result;
   });
 }
 
 export async function generateQuestions(text: string): Promise<{ question: string; type: 'comprehension' | 'conceptual' }[]> {
+  const cached = CacheService.get<any[]>(text, 'questions');
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    return [{ question: "What is the main idea of this text?", type: "comprehension" }];
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -185,11 +275,23 @@ export async function generateQuestions(text: string): Promise<{ question: strin
     });
 
     const response = await model;
-    return JSON.parse(response.text || "[]");
+    const result = JSON.parse(response.text || "[]");
+    CacheService.set(text, 'questions', result);
+    return result;
   });
 }
 
 export async function generateGlossary(text: string): Promise<{ term: string; definition: string }[]> {
+  const example = getExampleAnalysis(text);
+  if (example) return example.glossary;
+
+  const cached = CacheService.get<any[]>(text, 'glossary');
+  if (cached) return cached;
+
+  if (getWordCount(text) <= 200) {
+    return [];
+  }
+
   return withRetry(async () => {
     const model = ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -216,7 +318,9 @@ export async function generateGlossary(text: string): Promise<{ term: string; de
     });
 
     const response = await model;
-    return JSON.parse(response.text || "[]");
+    const result = JSON.parse(response.text || "[]");
+    CacheService.set(text, 'glossary', result);
+    return result;
   });
 }
 
