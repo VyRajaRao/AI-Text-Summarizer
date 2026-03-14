@@ -161,7 +161,17 @@ export async function analyzeReadability(text: string): Promise<{
     });
 
     const response = await model;
-    const data = JSON.parse(response.text || "{}");
+    let data = {
+      fleschKincaid: 0,
+      gunningFog: 0,
+      smog: 0,
+      gradeLevel: "Analysis Failed"
+    };
+    try {
+      data = JSON.parse(response.text || "{}");
+    } catch (e) {
+      console.error("Failed to parse readability JSON:", e);
+    }
     CacheService.set(text, 'readability', data);
     return data;
   });
@@ -198,7 +208,12 @@ export async function extractKeyPoints(text: string): Promise<string[]> {
     });
 
     const response = await model;
-    const result = JSON.parse(response.text || "[]");
+    let result = [];
+    try {
+      result = JSON.parse(response.text || "[]");
+    } catch (e) {
+      console.error("Failed to parse key points JSON:", e);
+    }
     CacheService.set(text, 'keyPoints', result);
     return result;
   });
@@ -234,7 +249,12 @@ export async function detectTopics(text: string): Promise<string[]> {
     });
 
     const response = await model;
-    const result = JSON.parse(response.text || "[]");
+    let result = [];
+    try {
+      result = JSON.parse(response.text || "[]");
+    } catch (e) {
+      console.error("Failed to parse topics JSON:", e);
+    }
     CacheService.set(text, 'topics', result);
     return result;
   });
@@ -275,7 +295,12 @@ export async function generateQuestions(text: string): Promise<{ question: strin
     });
 
     const response = await model;
-    const result = JSON.parse(response.text || "[]");
+    let result = [];
+    try {
+      result = JSON.parse(response.text || "[]");
+    } catch (e) {
+      console.error("Failed to parse questions JSON:", e);
+    }
     CacheService.set(text, 'questions', result);
     return result;
   });
@@ -318,7 +343,12 @@ export async function generateGlossary(text: string): Promise<{ term: string; de
     });
 
     const response = await model;
-    const result = JSON.parse(response.text || "[]");
+    let result = [];
+    try {
+      result = JSON.parse(response.text || "[]");
+    } catch (e) {
+      console.error("Failed to parse glossary JSON:", e);
+    }
     CacheService.set(text, 'glossary', result);
     return result;
   });

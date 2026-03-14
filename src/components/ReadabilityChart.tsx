@@ -12,6 +12,8 @@ interface ReadabilityChartProps {
 }
 
 export default function ReadabilityChart({ data }: ReadabilityChartProps) {
+  if (!data) return null;
+
   // Normalize data for the radar chart
   // Flesch-Kincaid: 0-100 (higher is easier, so we invert it for "complexity")
   // Gunning Fog: 0-20 (grade level)

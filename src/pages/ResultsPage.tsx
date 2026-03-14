@@ -21,6 +21,7 @@ export default function ResultsPage() {
   const [docData, setDocData] = useState<{ content: string; title: string; id?: string } | null>(null);
   const [readability, setReadability] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string>('');
   const [paraphrase, setParaphrase] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat' | 'comparison'>('analysis');
@@ -38,21 +39,28 @@ export default function ResultsPage() {
     const init = async () => {
       try {
         const scores = await analyzeReadability(parsed.content);
+        if (!scores) throw new Error("Failed to analyze readability");
         setReadability(scores);
 
         // Save document to Firestore if user is logged in
         if (user) {
-          const docRef = await addDoc(collection(db, 'documents'), {
-            userId: user.uid,
-            title: parsed.title,
-            content: parsed.content,
-            readability: scores,
-            createdAt: serverTimestamp()
-          });
-          setDocData(prev => prev ? { ...prev, id: docRef.id } : null);
+          try {
+            const docRef = await addDoc(collection(db, 'documents'), {
+              userId: user.uid,
+              title: parsed.title,
+              content: parsed.content,
+              readability: scores,
+              createdAt: serverTimestamp()
+            });
+            setDocData(prev => prev ? { ...prev, id: docRef.id } : null);
+          } catch (dbError) {
+            console.error('Firestore save error:', dbError);
+            // Don't fail the whole page if Firestore save fails
+          }
         }
-      } catch (error) {
-        console.error('Initialization error:', error);
+      } catch (err: any) {
+        console.error('Initialization error:', err);
+        setError(err.message || "An unexpected error occurred during analysis.");
       } finally {
         setIsLoading(false);
       }
@@ -73,7 +81,28 @@ export default function ResultsPage() {
     );
   }
 
-  if (!docData) return null;
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-dark p-8">
+        <div className="max-w-[500px] w-full glass-morphism rounded-[32px] p-12 text-center border border-white/10">
+          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-500/20">
+            <Loader2 className="w-10 h-10 text-red-500" />
+          </div>
+          <h1 className="text-[32px] font-display font-bold text-white mb-4">Analysis Failed</h1>
+          <p className="text-[16px] text-white/40 mb-12 leading-relaxed">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center justify-center gap-3 w-full py-4 rounded-full bg-white text-black font-bold hover:scale-[1.02] transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!docData || !readability) return null;
 
   return (
     <div className="min-h-screen bg-bg-dark pt-24 md:pt-32 pb-20">
