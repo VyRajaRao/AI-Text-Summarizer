@@ -103,5 +103,9 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidEmbedding(request.resource.data);
     }
+
+    match /geminiKeys/{keyId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

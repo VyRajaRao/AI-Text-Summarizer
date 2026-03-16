@@ -1,8 +1,102 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { CacheService } from "./cacheService";
 import { EXAMPLES } from "../constants";
+import { db, collection, onSnapshot, query, where } from "../lib/firebase";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+// --- Key Rotation Logic ---
+let API_KEYS: string[] = [
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
+  process.env.GEMINI_API_KEY_4,
+].filter(Boolean) as string[];
+
+type KeyChangeListener = (count: number) => void;
+const listeners: KeyChangeListener[] = [];
+
+function notifyListeners() {
+  listeners.forEach(l => l(API_KEYS.length));
+}
+
+// Sync with Firestore if available
+onSnapshot(query(collection(db, 'geminiKeys'), where('status', '==', 'active')), (snapshot) => {
+  const dbKeys = snapshot.docs.map(doc => doc.data().key);
+  // Combine env keys and db keys, removing duplicates
+  const allKeys = [...new Set([
+    ...[
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_4,
+    ].filter(Boolean) as string[],
+    ...dbKeys
+  ])];
+  
+  if (allKeys.length > 0) {
+    const changed = API_KEYS.length !== allKeys.length || !API_KEYS.every((v, i) => v === allKeys[i]);
+    API_KEYS = allKeys;
+    if (changed) notifyListeners();
+  }
+});
+
+export class GeminiManager {
+  private static currentIndex = 0;
+
+  static getClient(): GoogleGenAI {
+    if (API_KEYS.length === 0) {
+      throw new Error("No Gemini API keys found. Please add keys in the Admin Console.");
+    }
+    // Ensure index is within bounds
+    if (this.currentIndex >= API_KEYS.length) {
+      this.currentIndex = 0;
+    }
+    const key = API_KEYS[this.currentIndex];
+    return new GoogleGenAI({ apiKey: key });
+  }
+
+  static rotate() {
+    if (API_KEYS.length > 1) {
+      this.currentIndex = (this.currentIndex + 1) % API_KEYS.length;
+      console.log(`Rotating to API Key #${this.currentIndex + 1} of ${API_KEYS.length}`);
+    } else {
+      this.currentIndex = 0;
+    }
+  }
+
+  static getKeyCount(): number {
+    return API_KEYS.length;
+  }
+
+  static onKeysChange(listener: KeyChangeListener) {
+    listeners.push(listener);
+    return () => {
+      const index = listeners.indexOf(listener);
+      if (index > -1) listeners.splice(index, 1);
+    };
+  }
+
+  static isDuplicate(key: string): boolean {
+    return API_KEYS.includes(key);
+  }
+
+  static getCurrentIndex(): number {
+    return this.currentIndex;
+  }
+
+  static async testKey(key: string): Promise<boolean> {
+    try {
+      const genAI = new GoogleGenAI({ apiKey: key });
+      const response = await genAI.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: "Say 'ok'",
+      });
+      return !!response.text;
+    } catch (error) {
+      console.error("Key test failed:", error);
+      return false;
+    }
+  }
+}
 
 function getWordCount(text: string): number {
   return text.trim().split(/\s+/).length;
@@ -13,17 +107,19 @@ function getExampleAnalysis(text: string) {
   return example?.analysis || null;
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+async function withRetry<T>(fn: (client: GoogleGenAI) => Promise<T>, maxRetries = 3): Promise<T> {
   let lastError: any;
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await fn();
+      const client = GeminiManager.getClient();
+      return await fn(client);
     } catch (error: any) {
       lastError = error;
-      // If it's a 429 (Rate Limit), wait and retry
+      // If it's a 429 (Rate Limit), rotate key and retry
       if (error?.status === 'RESOURCE_EXHAUSTED' || error?.message?.includes('429') || error?.code === 429) {
-        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-        console.warn(`Rate limit hit. Retrying in ${Math.round(delay)}ms... (Attempt ${i + 1}/${maxRetries})`);
+        console.warn(`Rate limit hit. Rotating to next API key...`);
+        GeminiManager.rotate();
+        const delay = Math.pow(2, i) * 500 + Math.random() * 500; // Slightly shorter delay since we rotate keys
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -47,7 +143,7 @@ FORMATTING RULES:
 export async function summarizeText(text: string, length: 'short' | 'medium' | 'long'): Promise<string> {
   // 1. Check Examples
   const example = getExampleAnalysis(text);
-  if (example) return example.summary;
+  if (example && example.summaries) return example.summaries[length];
 
   // 2. Check Cache
   const cached = CacheService.get<string>(text, `summary_${length}`);
@@ -60,13 +156,18 @@ export async function summarizeText(text: string, length: 'short' | 'medium' | '
     return `[Local Analysis] ${localSummary}`;
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3.1-pro-preview",
-      contents: `Summarize the following text in a ${length} format. 
-      Short: 1-2 sentences.
-      Medium: 1 paragraph.
-      Long: Multiple paragraphs with key points.
+      contents: `Summarize the following text. 
+      
+      CRITICAL: You MUST ONLY return the ${length} version of the summary. 
+      DO NOT include any other lengths or formats.
+      
+      Format Requirements for ${length}:
+      ${length === 'short' ? 'Short: Exactly 1-2 concise sentences.' : ''}
+      ${length === 'medium' ? 'Medium: Exactly one well-structured paragraph.' : ''}
+      ${length === 'long' ? 'Long: Multiple detailed paragraphs with clear sections.' : ''}
       
       ${PLAIN_TEXT_FORMATTING_INSTRUCTIONS}
       
@@ -88,8 +189,8 @@ export async function paraphraseText(text: string, level: 'beginner' | 'intermed
     return `[Local Analysis] ${text}`;
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: `Paraphrase the following text for a ${level} reading level.
       Beginner: Simple vocabulary, short sentences, easy to understand for children or non-native speakers.
@@ -134,8 +235,8 @@ export async function analyzeReadability(text: string): Promise<{
     return localResult;
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Analyze the readability of the following text and return the scores in JSON format.
       Include:
@@ -189,8 +290,8 @@ export async function extractKeyPoints(text: string): Promise<string[]> {
     return sentences.slice(0, 3);
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Extract the most important bullet points from the following text. 
       Rank them by importance. Return as a JSON array of strings.
@@ -230,8 +331,8 @@ export async function detectTopics(text: string): Promise<string[]> {
     return ["General", "Short Text"];
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Detect the main topics or themes of the following text. 
       Return as a JSON array of strings.
@@ -268,8 +369,8 @@ export async function generateQuestions(text: string): Promise<{ question: strin
     return [{ question: "What is the main idea of this text?", type: "comprehension" }];
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Generate study questions from the following text. 
       Include both comprehension and conceptual questions.
@@ -317,8 +418,8 @@ export async function generateGlossary(text: string): Promise<{ term: string; de
     return [];
   }
 
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Detect important technical terms in the following text and generate definitions for them.
       Return as a JSON array of objects with 'term' and 'definition' fields.
@@ -355,8 +456,8 @@ export async function generateGlossary(text: string): Promise<{ term: string; de
 }
 
 export async function chatWithDocument(text: string, query: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]): Promise<string> {
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: [
         { role: 'user', parts: [{ text: `Context Document: ${text}` }] },
@@ -376,8 +477,8 @@ export async function chatWithDocument(text: string, query: string, history: { r
 }
 
 export async function chatWithContext(context: string, query: string, history: { role: 'user' | 'model', parts: { text: string }[] }[]): Promise<string> {
-  return withRetry(async () => {
-    const model = ai.models.generateContent({
+  return withRetry(async (client) => {
+    const model = client.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: [
         { role: 'user', parts: [{ text: `Relevant Context:\n${context}` }] },
@@ -397,7 +498,8 @@ export async function chatWithContext(context: string, query: string, history: {
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const result = await ai.models.embedContent({
+  const client = GeminiManager.getClient();
+  const result = await client.models.embedContent({
     model: "gemini-embedding-001",
     contents: [text],
   });
@@ -406,7 +508,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 export async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
-  const result = await ai.models.embedContent({
+  const client = GeminiManager.getClient();
+  const result = await client.models.embedContent({
     model: "gemini-embedding-001",
     contents: texts,
   });

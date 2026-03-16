@@ -73,34 +73,37 @@ export default function ComparisonPanel({ content }: ComparisonPanelProps) {
           <p className="text-[14px] font-medium">Generating multi-level summaries...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-8">
           {[
-            { title: 'Short', data: summaries?.short, color: 'emerald' },
-            { title: 'Medium', data: summaries?.medium, color: 'blue' },
-            { title: 'Long', data: summaries?.long, color: 'purple' }
+            { title: 'Short Summary', data: summaries?.short, color: 'emerald' },
+            { title: 'Medium Summary', data: summaries?.medium, color: 'blue' },
+            { title: 'Long Summary', data: summaries?.long, color: 'purple' }
           ].map((s, i) => (
             <motion.div
               key={s.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="flex flex-col h-full bg-white/[0.02] border border-white/5 rounded-[24px] p-6 hover:bg-white/[0.04] transition-all"
+              className="flex flex-col bg-white/[0.02] border border-white/5 rounded-[32px] p-8 hover:bg-white/[0.04] transition-all"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[18px] font-bold text-white">{s.title}</h3>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-white/30 uppercase tracking-widest">
-                    <Clock className="w-3 h-3" />
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-bottom border-white/5">
+                <div className="flex items-center gap-4">
+                  <div className={`w-2 h-8 rounded-full bg-${s.color}-500/50`} />
+                  <h3 className="text-[22px] font-display font-bold text-white">{s.title}</h3>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-[12px] font-bold text-white/30 uppercase tracking-[0.15em]">
+                    <Clock className="w-4 h-4" />
                     {calculateReadingTime(s.data?.text || '')} min read
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-400 uppercase tracking-widest">
-                    <Zap className="w-3 h-3" />
+                  <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-400 uppercase tracking-[0.15em]">
+                    <Zap className="w-4 h-4" />
                     {Math.round((s.data?.similarity || 0) * 100)}% Match
                   </div>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                <p className="text-[15px] leading-relaxed text-white/60 whitespace-pre-wrap">
+              <div className="prose prose-invert max-w-none">
+                <p className="text-[17px] leading-[1.8] text-white/70 whitespace-pre-wrap font-medium">
                   {s.data?.text}
                 </p>
               </div>

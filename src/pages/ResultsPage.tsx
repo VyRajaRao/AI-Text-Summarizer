@@ -148,68 +148,70 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Readability Stats */}
-          <div className="lg:col-span-1 space-y-8">
-            <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
-              <div className="flex items-center gap-2 text-white/40 mb-8">
-                <BarChart3 className="w-4 h-4" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Core Metrics</span>
-              </div>
-              
-              <div className="space-y-8">
-                <div>
-                  <p className="text-[12px] font-bold uppercase tracking-wider text-white/30 mb-2">Grade Level</p>
-                  <p className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Flesch-Kincaid</p>
-                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Gunning Fog</p>
-                    <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <ReadabilityChart data={readability} />
-
-            {/* Model Information */}
-            <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
-              <div className="flex items-center gap-2 text-white/40 mb-8">
-                <Cpu className="w-4 h-4" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Model Intelligence</span>
-              </div>
-              
-              <div className="space-y-8">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                    <p className="text-[15px] font-bold text-white">Gemini 3.1 Pro</p>
-                  </div>
-                  <p className="text-[14px] text-white/40 leading-relaxed">
-                    Optimized for complex reasoning and long-context understanding. This model handles the deep semantic analysis required for high-precision summarization.
-                  </p>
+        <div className={activeTab === 'comparison' ? "mb-12" : "grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12"}>
+          {/* Readability Stats - Hidden in comparison tab */}
+          {activeTab !== 'comparison' && (
+            <div className="lg:col-span-1 space-y-8">
+              <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
+                <div className="flex items-center gap-2 text-white/40 mb-8">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Core Metrics</span>
                 </div>
                 
-                <div className="pt-8 border-t border-white/5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                    <p className="text-[15px] font-bold text-white">Gemini 3 Flash</p>
+                <div className="space-y-8">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-white/30 mb-2">Grade Level</p>
+                    <p className="text-[40px] md:text-[48px] font-display font-bold text-white leading-none">{readability.gradeLevel}</p>
                   </div>
-                  <p className="text-[14px] text-white/40 leading-relaxed">
-                    Designed for low-latency efficiency. This model powers the real-time readability metrics and initial document processing.
-                  </p>
+                  <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/5">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Flesch-Kincaid</p>
+                      <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.fleschKincaid}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-2">Gunning Fog</p>
+                      <p className="text-[20px] md:text-[24px] font-display font-bold text-white">{readability.gunningFog}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <ReadabilityChart data={readability} />
+
+              {/* Model Information */}
+              <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
+                <div className="flex items-center gap-2 text-white/40 mb-8">
+                  <Cpu className="w-4 h-4" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Model Intelligence</span>
+                </div>
+                
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                      <p className="text-[15px] font-bold text-white">Gemini 3.1 Pro</p>
+                    </div>
+                    <p className="text-[14px] text-white/40 leading-relaxed">
+                      Optimized for complex reasoning and long-context understanding. This model handles the deep semantic analysis required for high-precision summarization.
+                    </p>
+                  </div>
+                  
+                  <div className="pt-8 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      <p className="text-[15px] font-bold text-white">Gemini 3 Flash</p>
+                    </div>
+                    <p className="text-[14px] text-white/40 leading-relaxed">
+                      Designed for low-latency efficiency. This model powers the real-time readability metrics and initial document processing.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className={`${activeTab === 'comparison' ? 'w-full' : 'lg:col-span-2'} space-y-10`}>
             {activeTab === 'analysis' && (
               <div className="space-y-10">
                 <SummaryPanel 

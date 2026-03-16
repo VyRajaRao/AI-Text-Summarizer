@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Copy, Check, Loader2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Copy, Check, Loader2, Zap } from 'lucide-react';
 import { summarizeText } from '../services/gemini';
 import { db, auth, collection, addDoc, serverTimestamp } from '../lib/firebase';
 
@@ -10,12 +10,13 @@ interface SummaryPanelProps {
 }
 
 export default function SummaryPanel({ content, docId, onSummaryGenerated }: SummaryPanelProps) {
-  const [length, setLength] = useState<'short' | 'medium' | 'long'>('medium');
   const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [rated, setRated] = useState<'up' | 'down' | null>(null);
+
+  const length = 'short';
 
   const calculateStats = (text: string) => {
     const words = text.trim().split(/\s+/).length;
@@ -85,19 +86,11 @@ export default function SummaryPanel({ content, docId, onSummaryGenerated }: Sum
   return (
     <div className="glass-morphism rounded-[32px] p-8 shadow-sm">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-[24px] font-display font-bold text-white">Summarization</h2>
-        <div className="flex bg-white/5 border border-white/10 rounded-full p-1">
-          {(['short', 'medium', 'long'] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLength(l)}
-              className={`px-6 py-2 rounded-full text-[13px] font-bold uppercase tracking-wider transition-all ${
-                length === l ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white/60'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+            <Zap className="w-5 h-5 text-emerald-400" />
+          </div>
+          <h2 className="text-[24px] font-display font-bold text-white">Short Summary</h2>
         </div>
       </div>
 

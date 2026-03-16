@@ -88,6 +88,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["textHash", "text", "vector", "createdAt"]
+    },
+    "GeminiKey": {
+      "title": "GeminiKey",
+      "description": "Stored Gemini API keys for rotation",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "error"] },
+        "lastTested": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["key", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -114,6 +127,10 @@
     "/embeddings/{embeddingId}": {
       "schema": "Embedding",
       "description": "Cached embeddings"
+    },
+    "/geminiKeys/{keyId}": {
+      "schema": "GeminiKey",
+      "description": "Stored API keys"
     }
   }
 }

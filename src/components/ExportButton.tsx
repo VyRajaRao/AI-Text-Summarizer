@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Download, FileText, FileCode, FileType, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
+import { PDFService } from '../services/pdfService';
+import { Download, FileText, FileCode, FileType, Loader2, Info } from 'lucide-react';
 
 interface ExportButtonProps {
   title: string;
@@ -12,7 +14,6 @@ interface ExportButtonProps {
 }
 
 export default function ExportButton({ title, content, summary, paraphrase }: ExportButtonProps) {
-  const [isExporting, setIsExporting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   const exportAsTXT = () => {
@@ -55,7 +56,13 @@ export default function ExportButton({ title, content, summary, paraphrase }: Ex
     addSection('PARAPHRASE', paraphrase || '');
     addSection('ORIGINAL CONTENT', content);
 
-    doc.save(`${title.replace(/\s+/g, '_')}_analysis.pdf`);
+    try {
+      doc.save(`${title.replace(/\s+/g, '_')}_analysis.pdf`);
+    } catch (error) {
+      console.warn('PDF save failed, using fallback:', error);
+      const blob = doc.output('blob');
+      saveAs(blob, `${title.replace(/\s+/g, '_')}_analysis.pdf`);
+    }
   };
 
   const exportAsDOCX = async () => {
@@ -126,6 +133,14 @@ export default function ExportButton({ title, content, summary, paraphrase }: Ex
             >
               <FileText className="w-4 h-4 text-emerald-400" />
               <span className="text-[14px] font-bold">Export TXT</span>
+            </button>
+            <div className="h-px bg-white/10 my-1" />
+            <button
+              onClick={() => { PDFService.generateProjectDocumentation(); setShowMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 text-emerald-400/80 hover:text-emerald-400 transition-all text-left"
+            >
+              <Info className="w-4 h-4" />
+              <span className="text-[14px] font-bold">Project Docs PDF</span>
             </button>
           </div>
         </>

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { chatWithContext } from '../services/gemini';
 import { EmbeddingService } from '../services/embeddingService';
-import { MessageSquare, Send, Loader2, User, Bot, Sparkles } from 'lucide-react';
+import { PDFService } from '../services/pdfService';
+import { MessageSquare, Send, Loader2, User, Bot, Sparkles, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ChatPanelProps {
@@ -11,6 +12,7 @@ interface ChatPanelProps {
 interface Message {
   role: 'user' | 'model';
   text: string;
+  type?: 'text' | 'doc_request';
 }
 
 export default function ChatPanel({ content }: ChatPanelProps) {
@@ -56,10 +58,28 @@ export default function ChatPanel({ content }: ChatPanelProps) {
     e.preventDefault();
     if (!input.trim() || isLoading || isEmbedding) return;
 
-    const userMessage = input.trim();
+    const userMessage = input.trim().toLowerCase();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', text: input.trim() }]);
     setIsLoading(true);
+
+    // Check for documentation request
+    const isDocRequest = userMessage.includes('pdf') || 
+                        (userMessage.includes('documentation') && userMessage.includes('project')) ||
+                        (userMessage.includes('workings') && userMessage.includes('project')) ||
+                        (userMessage.includes('architecture') && userMessage.includes('project'));
+
+    if (isDocRequest) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, { 
+          role: 'model', 
+          text: "I've prepared a comprehensive technical documentation PDF for you. It covers the project architecture, database design, authentication flows, and API design. You can download it below.",
+          type: 'doc_request'
+        }]);
+        setIsLoading(false);
+      }, 1000);
+      return;
+    }
 
     try {
       // Semantic Search: Find most relevant chunks
@@ -71,7 +91,7 @@ export default function ChatPanel({ content }: ChatPanelProps) {
         parts: [{ text: m.text }]
       }));
       
-      const response = await chatWithContext(context, userMessage, history);
+      const response = await chatWithContext(context, input.trim(), history);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error: any) {
       console.error('Chat error:', error);
@@ -103,6 +123,8 @@ export default function ChatPanel({ content }: ChatPanelProps) {
             <Bot className="w-12 h-12 text-white/10 mb-4" />
             <p className="text-white/40 text-[14px]">
               Ask anything about the document. I can help you find specific information or explain complex concepts.
+              <br /><br />
+              <span className="text-emerald-400/60 italic">Tip: Ask for "project documentation" to get a technical PDF overview.</span>
             </p>
           </div>
         )}
@@ -114,15 +136,27 @@ export default function ChatPanel({ content }: ChatPanelProps) {
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[80%] p-4 rounded-2xl flex gap-3 ${
+              <div className={`max-w-[80%] p-4 rounded-2xl flex flex-col gap-3 ${
                 m.role === 'user' 
                   ? 'bg-emerald-500 text-black font-medium' 
                   : 'bg-white/5 border border-white/10 text-white/80'
               }`}>
-                <div className="flex-shrink-0 mt-1">
-                  {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-emerald-400" />}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 mt-1">
+                    {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-emerald-400" />}
+                  </div>
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.text}</p>
                 </div>
-                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{m.text}</p>
+                
+                {m.type === 'doc_request' && (
+                  <button
+                    onClick={() => PDFService.generateProjectDocumentation()}
+                    className="mt-4 flex items-center justify-center gap-2 py-3 px-6 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl transition-all group"
+                  >
+                    <FileDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                    Download Technical PDF
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}
